@@ -2,4 +2,12 @@ cmake_minimum_required(VERSION 3.12)
 
 project(ct)
 
-add_executable(ct "src/main.cpp")
+add_subdirectory("third-party")
+add_subdirectory("src")
+
+if (${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
+	enable_testing()
+	add_subdirectory ("test")
+
+	add_subdirectory ("examples")
+endif()

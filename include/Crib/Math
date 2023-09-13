@@ -1,0 +1,11 @@
+#pragma once
+
+int value();
+
+struct int2
+{
+	int x, y;
+};
+
+
+static inline int2 operator+(const int2& a, const int2& b) { return { a.x + b.x, a.y + b.y }; }
