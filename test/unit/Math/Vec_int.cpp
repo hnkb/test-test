@@ -1,6 +1,7 @@
 
 #include <Crib/Math>
 
+#include <typeinfo>
 #include <doctest/doctest.h>
 
 // using namespace Crib;
@@ -28,12 +29,12 @@ TEST_CASE("int2-basic")
 
 	// make sure we are not zero initializing with default constructor
 	// important for performance of big vector allocation
-	auto f = new (buffer) int2;
+	auto f = new ((void*)buffer) int2;
 	CHECK(f->x == 1);
 	CHECK(f->y == 2);
 
 	// make sure zero-initialize works when using {} initializer
-	f = new (buffer) int2 {};
+	f = new ((void*)buffer) int2 {};
 	CHECK(f->x == 0);
 	CHECK(f->y == 0);
 
