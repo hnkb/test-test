@@ -46,8 +46,11 @@ jobs:
     - uses: actions/checkout@v3
 
     - uses: seanmiddleditch/gha-setup-ninja@master
+    #alternatives:
+    #- uses: ashutoshvarma/action-cmake-build@master
+    #- uses: turtlesec-no/get-ninja@main
 
-    - run: ninja --version
+    #- run: ninja --version
 
     - name: Enable MSVC Developer Command Prompt (needed for Ninja)
       uses: ilammy/msvc-dev-cmd@v1.12.1
