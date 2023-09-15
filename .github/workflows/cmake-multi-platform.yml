@@ -8,57 +8,69 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.platform.os }}
 
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations.
       fail-fast: false
 
       matrix:
+        platform:
+          - { name: windows-msvc,  os: windows-latest, cc: cl,       cxx: cl       }
+          #- { name: windows-clang, os: windows-latest, cc: clang-cl, cxx: clang-cl }
+          - { name: windows-gcc, os: windows-latest, cc: gcc,      cxx: g++      }
+          - { name: linux-gcc,     os: ubuntu-latest,  cc: gcc,      cxx: g++      }
+          - { name: linux-clang,   os: ubuntu-latest,  cc: clang,    cxx: clang++  }
+          - { name: mac,           os: macos-latest,   cc: clang,    cxx: clang++  }
         #config:
         #  - { os: windows-latest, cc: "cl" }
         #  - { os: ubuntu-latest, cc: "gcc" }
         #  - { os: ubuntu-latest, cc: "clang" }
         #  - { os: macos-latest, cc: "clang" }
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        #os: [ubuntu-latest, windows-latest, macos-latest]
         build_type: [Release]
-        c_compiler: [gcc, clang, cl]
-        include:
-          - c_compiler: cl
-            cpp_compiler: cl
-          - c_compiler: gcc
-            cpp_compiler: g++
-          - c_compiler: clang
-            cpp_compiler: clang++
-        exclude:
+        #c_compiler: [gcc, clang, cl]
+        #include:
+        #  - cc: cl
+        #    cxx: cl
+        #  - cc: clang-cl
+        #    cxx: clang-cl
+        #  - cc: gcc
+        #    cxx: g++
+        #  - cc: clang
+        #    cxx: clang++
+        #exclude:
           #- os: windows-latest
           #  c_compiler: gcc
-          - os: windows-latest
-            c_compiler: clang
-          - os: ubuntu-latest
-            c_compiler: cl
-          - os: macos-latest
-            c_compiler: cl
-          - os: macos-latest
-            c_compiler: gcc
+        #  - os: windows-latest
+          #   c_compiler: clang
+          # - os: ubuntu-latest
+          #   c_compiler: cl
+          # - os: macos-latest
+          #   c_compiler: cl
+          # - os: macos-latest
+          #   c_compiler: gcc
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-    - uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Install Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
     #alternatives:
     #- uses: ashutoshvarma/action-cmake-build@master
     #- uses: turtlesec-no/get-ninja@main
 
     #- run: ninja --version
 
-    - name: Enable MSVC Developer Command Prompt (needed for Ninja)
+    - name: (Windows) Enable MSVC Developer Command Prompt (needed for Ninja)
       uses: ilammy/msvc-dev-cmd@v1.12.1
-      #if: matrix.os == 'windows-latest'
-      if: ${{ (matrix.os == 'windows-latest') && (matrix.c_compiler == 'cl') }}
+      if: matrix.platform == 'windows-msvc'
+      #if: ${{ (matrix.os == 'windows-latest') && (matrix.c_compiler == 'cl') }}
 
-    - name: Enable Mingw64
-      if: ${{ (matrix.os == 'windows-latest') && (matrix.c_compiler == 'gcc') }}
+    - name: (Windows) Enable Mingw64
+      #if: ${{ (matrix.os == 'windows-latest') && (matrix.c_compiler == 'gcc') }}
+      if: matrix.platform.name == 'windows-gcc'
       uses: msys2/setup-msys2@v2
       with:
         update: true
@@ -78,8 +90,8 @@ jobs:
       run: >
         cmake -G "Ninja"
         -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.platform.cxx }}
+        -DCMAKE_C_COMPILER=${{ matrix.platform.cc }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -S ${{ github.workspace }}
 
