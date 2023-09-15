@@ -40,10 +40,6 @@ jobs:
           - os: mac
             runner: macos-latest
 
-#          - os: windows
-#            compiler: clang
-#            cc: clang-cl
-#            cxx: clang-cl
           - compiler: cl
             cc: cl
             cxx: cl
@@ -60,10 +56,6 @@ jobs:
 
     - name: Install Ninja
       uses: seanmiddleditch/gha-setup-ninja@master
-    #alternatives:
-      # uses: turtlesec-no/get-ninja@main
-
-    - run: ninja --version
 
     - name: (Windows) Enable MSVC Developer Command Prompt (needed for Ninja)
       uses: ilammy/msvc-dev-cmd@v1.12.1
@@ -95,11 +87,7 @@ jobs:
 
     - name: Build
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }}
-      # --config ${{ matrix.build_type }}
 
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest
-      # --build-config ${{ matrix.build_type }}
