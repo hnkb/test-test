@@ -1,4 +1,4 @@
-name: Build and test all
+name: Build and test on all platforms
 
 on:
   push:
@@ -8,69 +8,70 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.platform.os }}
+    runs-on: ${{ matrix.runner }}
+    name: ${{ matrix.os }}-${{ matrix.compiler }}
 
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations.
       fail-fast: false
 
       matrix:
-        platform:
-          - { name: windows-msvc,  os: windows-latest, cc: cl,       cxx: cl       }
-          #- { name: windows-clang, os: windows-latest, cc: clang-cl, cxx: clang-cl }
-          - { name: windows-gcc, os: windows-latest, cc: gcc,      cxx: g++      }
-          - { name: linux-gcc,     os: ubuntu-latest,  cc: gcc,      cxx: g++      }
-          - { name: linux-clang,   os: ubuntu-latest,  cc: clang,    cxx: clang++  }
-          - { name: mac,           os: macos-latest,   cc: clang,    cxx: clang++  }
-        #config:
-        #  - { os: windows-latest, cc: "cl" }
-        #  - { os: ubuntu-latest, cc: "gcc" }
-        #  - { os: ubuntu-latest, cc: "clang" }
-        #  - { os: macos-latest, cc: "clang" }
-        #os: [ubuntu-latest, windows-latest, macos-latest]
-        build_type: [Release]
-        #c_compiler: [gcc, clang, cl]
-        #include:
-        #  - cc: cl
-        #    cxx: cl
-        #  - cc: clang-cl
-        #    cxx: clang-cl
-        #  - cc: gcc
-        #    cxx: g++
-        #  - cc: clang
-        #    cxx: clang++
-        #exclude:
-          #- os: windows-latest
-          #  c_compiler: gcc
-        #  - os: windows-latest
-          #   c_compiler: clang
-          # - os: ubuntu-latest
-          #   c_compiler: cl
-          # - os: macos-latest
-          #   c_compiler: cl
-          # - os: macos-latest
-          #   c_compiler: gcc
+        os: [ windows, ubuntu, mac ]
+        compiler: [ cl, gcc, clang ]
+        build_type: [ Release ]
+
+        exclude:
+          # - os: windows
+          #   compiler: gcc
+          # - os: windows
+          #   compiler: clang
+          - os: ubuntu
+            compiler: cl
+          - os: mac
+            compiler: cl
+          - os: mac
+            compiler: gcc
+
+        include:
+          - os: windows
+            runner: windows-latest
+          - os: ubuntu
+            runner: ubuntu-latest
+          - os: mac
+            runner: macos-latest
+
+          - os: windows
+            compiler: clang
+            cc: clang-cl
+            cxx: clang-cl
+          - compiler: cl
+            cc: cl
+            cxx: cl
+          - compiler: gcc
+            cc: gcc
+            cxx: g++
+          - compiler: clang
+            cc: clang
+            cxx: clang++
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
 
     - name: Install Ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
+      uses: turtlesec-no/get-ninja@main
     #alternatives:
-    #- uses: ashutoshvarma/action-cmake-build@master
-    #- uses: turtlesec-no/get-ninja@main
+    # uses: ashutoshvarma/action-cmake-build@master
+    # uses: seanmiddleditch/gha-setup-ninja@master
 
-    #- run: ninja --version
+    - run: ninja --version
 
     - name: (Windows) Enable MSVC Developer Command Prompt (needed for Ninja)
       uses: ilammy/msvc-dev-cmd@v1.12.1
-      if: matrix.platform == 'windows-msvc'
-      #if: ${{ (matrix.os == 'windows-latest') && (matrix.c_compiler == 'cl') }}
+      if: ${{ (matrix.os == 'windows') && (matrix.compiler != 'gcc') }}
 
-    - name: (Windows) Enable Mingw64
-      #if: ${{ (matrix.os == 'windows-latest') && (matrix.c_compiler == 'gcc') }}
-      if: matrix.platform.name == 'windows-gcc'
+    - name: (Windows) Enable MSYS2 and install Mingw-w64
+      if: ${{ (matrix.os == 'windows') && (matrix.compiler == 'gcc') }}
       uses: msys2/setup-msys2@v2
       with:
         update: true
@@ -85,22 +86,21 @@ jobs:
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
     - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
         cmake -G "Ninja"
         -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.platform.cxx }}
-        -DCMAKE_C_COMPILER=${{ matrix.platform.cc }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+        -DCMAKE_C_COMPILER=${{ matrix.cc }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -S ${{ github.workspace }}
 
     - name: Build
-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }}
+      # --config ${{ matrix.build_type }}
 
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest --build-config ${{ matrix.build_type }}
+      run: ctest
+      # --build-config ${{ matrix.build_type }}
