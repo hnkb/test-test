@@ -1,4 +1,5 @@
-name: Build and test on all platforms
+# can I push here?
+name: Build and test all
 
 on:
   push:
